@@ -22,6 +22,7 @@ Usage: acme-express --account account.pem --csr domain.der --domain ${DOMAIN} --
 Options:
 
   -h, --help                                           output usage information
+  --cross-signed                                       Print letsencrypt.org's cross-signed x1 cert to STDOUT
   --account <account.pem>                              Account private key PEM file
   --csr <domain.der>                                   Certificate Signing Request file in DER encoding
   --dom <domain>                                       The domain for which we are requesting a certificate. E.g. "mydomain.org"
@@ -65,35 +66,37 @@ Here is a simple Node.js express server using the certificate produced by
 this script:
 
 ```javascript
-  let fs      = require('fs');
-  let http    = require('http');
-  let https   = require('https');
-  let express = require('express');
-  let app     = express();
-  let domain  = 'mydomain.org';
+    let fs      = require('fs');
+    let http    = require('http');
+    let https   = require('https');
+    let express = require('express');
+    let app     = express();
+    let domain  = 'mydomain.org';
 
-  // Load the HTTPS credentials
-  let credentials = {
-    key  : fs.readFileSync('domain.pem'),
-    cert : fs.readFileSync('cert.pem'),
+    // Load the HTTPS credentials
+    let credentials = {
+      key  : fs.readFileSync('domain.pem'),
+      cert : fs.readFileSync('cert.pem'),
 
-    // If you want to get an 'A' on your ssllabs report card, you need to
-    // include the cross-signed cert from letsencrypt.org. You can
-    // download it from the following URL:
-    ca   : [fs.readFileSync('lets-encrypt-x1-cross-signed.pem')]
-  }
+      // If you want to get an 'A' on your ssllabs report card, you need to
+      // include the cross-signed cert from letsencrypt.org. You can get a
+      // copy with the following command:
+      //   acme-express --cross-signed > lets-encrypt-x1-cross-signed.pem
+      // Or, you can download it directly from letsencrypt.org at the following URL:
+      ca   : [fs.readFileSync('lets-encrypt-x1-cross-signed.pem')]
+    }
 
-  // Create an HTTPS server with your express app
-  https.createServer(credentials, app).listen(443, function() {
-    console.log('Listening on HTTPS');
-  });
+    // Create an HTTPS server with your express app
+    https.createServer(credentials, app).listen(443, function() {
+      console.log('Listening on HTTPS');
+    });
 
-  // (Optional) Create a simple server to redirect all HTTP traffic to HTTPS
-  http.createServer(function (req, res) {
-    let code = (req.method === 'POST') ? 307 : 302;
-    res.writeHead(code, {'Location' : 'https://' + domain + req.url});
-    res.end();
-  }).listen(80, function() {
-    console.log('Redirecting HTTP to HTTPS');
-  });
+    // (Optional) Create a simple server to redirect all HTTP traffic to HTTPS
+    http.createServer(function (req, res) {
+      let code = (req.method === 'POST') ? 307 : 302;
+      res.writeHead(code, {'Location' : 'https://' + domain + req.url});
+      res.end();
+    }).listen(80, function() {
+      console.log('Redirecting HTTP to HTTPS');
+    });
 ```

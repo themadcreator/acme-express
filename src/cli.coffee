@@ -82,7 +82,7 @@ commander
         // If you want to get an 'A' on your ssllabs report card, you need to
         // include the cross-signed cert from letsencrypt.org. You can get a
         // copy with the following command:
-        //   ${BASENAME} --cross-signed > lets-encrypt-x1-cross-signed.pem
+        //   #{BASENAME} --cross-signed > lets-encrypt-x1-cross-signed.pem
         // Or, you can download it directly from letsencrypt.org at the following URL:
         ca   : [fs.readFileSync('lets-encrypt-x1-cross-signed.pem')]
       }
