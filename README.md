@@ -1,0 +1,99 @@
+# acme-express
+
+ACME protocol client for automated signed x.509 certificates.
+
+Letsencrypt.org is an EFF-sponsored, *gratis* service that implements the
+ACME protocol. This script will allow you to create a signed x.509
+certificate, suitable to secure your server with HTTPS, using
+letsencrypt.org or any other certificate authority that supports the ACME
+protocol.
+
+## Installation
+
+```bash
+  npm install -g acme-express
+```
+
+## CLI
+
+```
+Usage: acme-express --account account.pem --csr domain.der --domain ${DOMAIN} --ca letsencrypt-beta
+
+Options:
+
+  -h, --help                                           output usage information
+  --account <account.pem>                              Account private key PEM file
+  --csr <domain.der>                                   Certificate Signing Request file in DER encoding
+  --dom <domain>                                       The domain for which we are requesting a certificate. E.g. "mydomain.org"
+  --ca [URL|"letsencrypt-beta"|"letsencrypt-staging"]  Certificate authority URL running ACME protocol. Default "letsencrypt-staging"
+  --agreement [URL|"letsencrypt-1.0.1"]                The certificate agreement URL. Default "letsencrypt-1.0.1"
+  --log [debug|info|warn|error]                        Set the log level (logs always use STDERR). Default "info"
+```
+
+## Sign a cert
+
+Register a domain, point your DNS at your server. From that server, you
+can use this script to verify that you control the domain and acquire a
+signed certficate.
+
+```bash
+  # Set your domain
+  export DOMAIN=mydomain.org
+
+  # Create domain key and DER-encoded Certificate Signing request
+  openssl genrsa 4096 > domain.pem
+  openssl req -new -sha256 -key domain.pem -subj "/CN=${DOMAIN}" -outform DER > domain.der
+
+  # Create account key and get letsencrypt.org to sign your cert
+  openssl genrsa 4096 > account.pem
+  sudo acme-express --account account.pem --csr domain.der --dom "${DOMAIN}" --ca letsencrypt-beta > cert.pem
+```
+
+#### Why Sudo?
+
+To verify ownership of the domain, we use the simple HTTP
+challenge/response method. This script will briefly host a Node.js HTTP
+server on port 80 (which requires admin access). The challenge token is
+served at the well-defined challenge/response URL so that the certificate
+authority can request it.
+
+See the "challengeResponse" method in src/acme-protocol.coffee
+
+## Create an HTTPS Server
+
+Here is a simple Node.js express server using the certificate produced by
+this script:
+
+```javascript
+  let fs      = require('fs');
+  let http    = require('http');
+  let https   = require('https');
+  let express = require('express');
+  let app     = express();
+  let domain  = 'mydomain.org';
+
+  // Load the HTTPS credentials
+  let credentials = {
+    key  : fs.readFileSync('domain.pem'),
+    cert : fs.readFileSync('cert.pem'),
+
+    // If you want to get an 'A' on your ssllabs report card, you need to
+    // include the cross-signed cert from letsencrypt.org. You can
+    // download it from the following URL:
+    ca   : [fs.readFileSync('lets-encrypt-x1-cross-signed.pem')]
+  }
+
+  // Create an HTTPS server with your express app
+  https.createServer(credentials, app).listen(443, function() {
+    console.log('Listening on HTTPS');
+  });
+
+  // (Optional) Create a simple server to redirect all HTTP traffic to HTTPS
+  http.createServer(function (req, res) {
+    let code = (req.method === 'POST') ? 307 : 302;
+    res.writeHead(code, {'Location' : 'https://' + domain + req.url});
+    res.end();
+  }).listen(80, function() {
+    console.log('Redirecting HTTP to HTTPS');
+  });
+```

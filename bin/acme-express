@@ -1,0 +1,6 @@
+#!/usr/bin/env node
+
+if (require && require.main === module) {
+  require('coffee-script').register();
+  require(require('path').join(__dirname, '..', 'src', 'cli.coffee'));
+}
