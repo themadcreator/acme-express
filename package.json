@@ -1,16 +1,16 @@
 {
   "name": "acme-express",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "ACME protocol client for SSL certificates",
   "bin": {
     "acme-express": "bin/acme-express"
   },
   "main": "src/api.coffee",
   "scripts": {
-    "run"           : "./bin/acme-express",
-    "version-patch" : "npm version patch -m \"Update version to %s\" ",
-    "version-minor" : "npm version minor -m \"Update version to %s\" ",
-    "ship"          : "git push && git push --tags && npm publish"
+    "run": "./bin/acme-express",
+    "version-patch": "npm version patch -m \"Update version to %s\" ",
+    "version-minor": "npm version minor -m \"Update version to %s\" ",
+    "ship": "git push && git push --tags && npm publish"
   },
   "repository": {
     "type": "git",
