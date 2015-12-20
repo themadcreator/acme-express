@@ -1,4 +1,5 @@
 fs             = require 'fs'
+chalk          = require 'chalk'
 commander      = require 'commander'
 logger         = require './logger'
 {JwsClient}    = require './jws-client'
@@ -138,6 +139,6 @@ do ->
   acme.getCertificate(options.dom, options.csr)
     .then((cert) -> console.log cert) # Output signed cert to STDOUT
     .catch((err) ->
-      logger.error(err)
+      logger.error(chalk.red(err))
       process.exit(1)
     )
