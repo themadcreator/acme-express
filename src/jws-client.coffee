@@ -62,7 +62,7 @@ class JwsClient
         res.setEncoding(null)
         res.on 'data', (d) -> chunks.push(new Buffer(d))
         res.on 'end', ->
-          res.body = Buffer.concat(chunks).toString('utf8')
+          res.body = Buffer.concat(chunks)
           resolve(res)
       )
       req.on 'error', (err) -> reject(err)
