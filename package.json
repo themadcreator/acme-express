@@ -11,6 +11,10 @@
     "deploy": "npm version minor -m \"Update version to %s\" ",
     "postdeploy": "git push && git push --tags"
   },
+  "repository" : {
+    "type" : "git",
+    "url"  : "https://github.com/themadcreator/acme-express.git"
+  },
   "keywords": [
     "acme",
     "letsencrypt",

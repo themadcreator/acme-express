@@ -43,7 +43,7 @@ signed certficate.
 
 ```bash
   # Set your domain
-  export DOMAIN=mydomain.org
+  DOMAIN=mydomain.org
 
   # Create domain key and DER encoded Certificate Signing request
   openssl genrsa 4096 > domain.pem
