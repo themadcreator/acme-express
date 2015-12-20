@@ -1,6 +1,6 @@
 {
   "name": "acme-express",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "ACME protocol client for SSL certificates",
   "bin": {
     "acme-express": "bin/acme-express"
@@ -11,9 +11,9 @@
     "deploy": "npm version minor -m \"Update version to %s\" ",
     "postdeploy": "git push && git push --tags"
   },
-  "repository" : {
-    "type" : "git",
-    "url"  : "https://github.com/themadcreator/acme-express.git"
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/themadcreator/acme-express.git"
   },
   "keywords": [
     "acme",
