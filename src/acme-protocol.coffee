@@ -1,3 +1,4 @@
+http        = require 'http'
 Promise     = require 'bluebird'
 logger      = require './logger'
 {JwsClient} = require './jws-client'
