@@ -1,4 +1,4 @@
-# Export classes for programatic use
+# Expose API for programatic use
 
 {JwsClient}    = require './jws-client'
 {AcmeProtocol} = require './acme-protocol'
