@@ -15,7 +15,7 @@ class AcmeProtocol
       .then(=> @sign(certificateDER))
 
   register : =>
-    logger.info chalk.blue 'Registering account'
+    logger.info chalk.blue '\nRegistering account'
     return @io.jwsRequest('/acme/new-reg', {
       resource  : 'new-reg'
       agreement : 'https://letsencrypt.org/documents/LE-SA-v1.0.1-July-27-2015.pdf'
@@ -27,7 +27,7 @@ class AcmeProtocol
     )
 
   authorize : (domain) =>
-    logger.info chalk.blue "Authorizing domain '#{domain}'"
+    logger.info chalk.blue "\nAuthorizing domain '#{domain}'"
     return @io.jwsRequest('/acme/new-authz', {
       resource   : 'new-authz'
       identifier :
@@ -40,7 +40,7 @@ class AcmeProtocol
     )
 
   challengeResponse : (authorization) =>
-    logger.info chalk.blue 'Performing challenge/response'
+    logger.info chalk.blue '\nPerforming challenge/response'
 
     # Extract HTTP challenge token
     {challenges} = authorization
@@ -93,7 +93,7 @@ class AcmeProtocol
     )
 
   sign : (certificateDER) ->
-    logger.info chalk.blue 'Signing certificate'
+    logger.info chalk.blue '\nSigning certificate'
     return @io.jwsRequest('/acme/new-cert', {
       resource : 'new-cert'
       csr      : JwsClient.toBase64(certificateDER)
