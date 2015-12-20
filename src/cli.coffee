@@ -138,6 +138,6 @@ do ->
   acme.getCertificate(options.dom, options.csr)
     .then((cert) -> console.log cert) # Output signed cert to STDOUT
     .catch((err) ->
-      log.error(err)
+      logger.error(err)
       process.exit(1)
     )

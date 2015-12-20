@@ -1,5 +1,8 @@
-ursa   = require 'ursa'
-logger = require './logger'
+ursa    = require 'ursa'
+crypto  = require 'crypto'
+Promise = require 'bluebird'
+request = require 'request'
+logger  = require './logger'
 
 class JwsClient
   # URL-safe base64 encoding
