@@ -60,9 +60,9 @@ class JwsClient
       req = request(options, (res) ->
         chunks = []
         res.setEncoding(null)
-        res.on 'data', (d) -> chunks.push(d)
+        res.on 'data', (d) -> chunks.push(new Buffer(d))
         res.on 'end', ->
-          res.body = Buffer.concat(chunks)
+          res.body = Buffer.concat(chunks).toString('utf8')
           resolve(res)
       )
       req.on 'error', (err) -> reject(err)

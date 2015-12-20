@@ -7,9 +7,10 @@
   },
   "main": "src/api.coffee",
   "scripts": {
-    "run": "./bin/acme-express",
-    "preship": "npm version minor -m \"Update version to %s\" ",
-    "ship": "git push && git push --tags && npm publish"
+    "run"           : "./bin/acme-express",
+    "version-patch" : "npm version patch -m \"Update version to %s\" ",
+    "version-minor" : "npm version minor -m \"Update version to %s\" ",
+    "ship"          : "git push && git push --tags && npm publish"
   },
   "repository": {
     "type": "git",
