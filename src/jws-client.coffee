@@ -59,8 +59,8 @@ class JwsClient
     return new Promise((resolve, reject) ->
       req = request(options, (res) ->
         chunks = []
-        res.setEncoding(null)
-        res.on 'data', (d) -> chunks.push(new Buffer(d))
+        res.on 'data', (d) ->
+          chunks.push(new Buffer(d))
         res.on 'end', ->
           res.body = Buffer.concat(chunks)
           resolve(res)

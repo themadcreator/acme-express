@@ -100,6 +100,7 @@ class AcmeProtocol
     }).then((res) ->
       if res.statusCode isnt 201 then throw new Error("Signing failed with code #{res.statusCode}")
       logger.info chalk.green 'OK'
+      if res.headers.location? then logger.info 'Certificate available for download at', chalk.yellow res.headers.location
       certblock = res.body.toString('base64').replace(/(.{64})/g, '$1\n')
       return """
         -----BEGIN CERTIFICATE-----
