@@ -1,5 +1,5 @@
-ursa    = require 'ursa'
 crypto  = require 'crypto'
+asn1    = require 'asn1.js'
 Promise = require 'bluebird'
 request = require 'request'
 logger  = require './logger'
@@ -13,14 +13,27 @@ class JwsClient
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
 
+  @rsaEncoding : asn1.define 'RSA PRIVATE KEY', ->
+    @seq().obj(
+      @key('version').int()
+      @key('modulus').int()
+      @key('publicExponent').int()
+      @key('privateExponent').int()
+      @key('prime1').int()
+      @key('prime2').int()
+      @key('exponent1').int()
+      @key('exponent2').int()
+      @key('coefficient').int()
+    )
+
   constructor : (@accountPrivateKey, @jwsServer) ->
-    rsaKey = ursa.createPrivateKey(@accountPrivateKey)
+    rsaKey = JwsClient.rsaEncoding.decode(@accountPrivateKey, 'pem', {label : JwsClient.rsaEncoding.name})
     @jwsHeader = {
       alg : 'RS256'
       jwk :
-        'e'   : JwsClient.toBase64(rsaKey.getExponent())
+        'e'   : JwsClient.toBase64(rsaKey.publicExponent.toArray())
         'kty' : 'RSA'
-        'n'   : JwsClient.toBase64(rsaKey.getModulus())
+        'n'   : JwsClient.toBase64(rsaKey.modulus.toArray())
     }
 
     @thumbprint = JwsClient.toBase64(
