@@ -1,6 +1,8 @@
 fs             = require 'fs'
 commander      = require 'commander'
 logger         = require './logger'
+{JwsClient}    = require './jws-client'
+{AcmeProtocol} = require './acme-protocol'
 
 BASENAME = require('path').basename(process.argv[1])
 
@@ -22,13 +24,18 @@ lookupOrUrl = (obj) ->
 commander
   .usage("""--account account.pem --csr domain.der --domain ${DOMAIN} --ca letsencrypt-staging
   \n
-    ACME protocol client for automated signed x.509 certificates.
 
-    Letsencrypt.org is an EFF-sponsored, *gratis* service that implements the
-    ACME protocol. This script will allow you to create a signed x.509
-    certificate, suitable to secure your server with HTTPS, using
+    Automatic Certificate Management Environment (ACME)[1] protocol client for
+    automating SSL certificates.
+
+    Letsencrypt[2] is a gratis, open source community sponsored service that
+    implements the ACME protocol. This script will allow you to create a
+    signed SSL certificate, suitable to secure your server with HTTPS, using
     letsencrypt.org or any other certificate authority that supports the ACME
     protocol.
+
+    [1] https://github.com/ietf-wg-acme/acme/
+    [2] https://letsencrypt.org/
   """)
   .description("""
   \n  
@@ -107,23 +114,21 @@ commander
   .option('--account <account.pem>', 'Account private key PEM file', fs.readFileSync)
   .option('--csr <domain.der>', 'Certificate Signing Request file in DER encoding', fs.readFileSync)
   .option('--dom <domain>', 'The domain for which we are requesting a certificate. E.g. "mydomain.org"')
-  .option('--ca [URL|"letsencrypt-beta"|"letsencrypt-staging"]', 'Certificate authority URL running ACME protocol. Default "letsencrypt-staging"', lookupOrUrl(CERTIFICATE_AUTHORITIES), CERTIFICATE_AUTHORITIES['letsencrypt-staging'])
-  .option('--agreement [URL|"letsencrypt-1.0.1"]', 'The certificate agreement URL. Default "letsencrypt-1.0.1"', lookupOrUrl(CERTIFICATE_AGREEMENTS), CERTIFICATE_AGREEMENTS['letsencrypt-1.0.1'])
-  .option('--log [debug|info|warn|error]', 'Set the log level (logs always use STDERR). Default "info"', 'info')
+  .option('--ca <URL|"letsencrypt-beta"|"letsencrypt-staging">', 'Certificate authority URL running ACME protocol. Default "letsencrypt-staging"', lookupOrUrl(CERTIFICATE_AUTHORITIES), CERTIFICATE_AUTHORITIES['letsencrypt-staging'])
+  .option('--agreement <URL|"letsencrypt-1.0.1">', 'The certificate agreement URL. Default "letsencrypt-1.0.1"', lookupOrUrl(CERTIFICATE_AGREEMENTS), CERTIFICATE_AGREEMENTS['letsencrypt-1.0.1'])
+  .option('--log <debug|info|warn|error>', 'Set the log level (logs always use STDERR). Default "info"', 'info')
 
 do ->
   options = commander.parse(process.argv)
 
+  # Return X1 cert if requested
   if options.crossSigned
     console.log fs.readFileSync(__dirname + '/lets-encrypt-x1-cross-signed.pem', 'utf-8')
     return
 
-  {JwsClient}    = require './jws-client'
-  {AcmeProtocol} = require './acme-protocol'
 
   # Check args
   if not (options.account? and options.csr? and options.dom?) then return commander.help()
-
 
   # Set log level
   logger.setLevel(options.log)
