@@ -1,7 +1,8 @@
 crypto  = require 'crypto'
+http    = require 'http'
+https   = require 'https'
 asn1    = require 'asn1.js'
 Promise = require 'bluebird'
-request = require 'request'
 logger  = require './logger'
 
 class JwsClient
@@ -43,18 +44,30 @@ class JwsClient
     )
 
   httpRequest : (url, data) ->
-    method = if data? then 'post' else 'get'
-    logger.debug 'REQUEST:', method, url
+    logger.debug 'REQUEST:', url, data
+
+    # Parse URL and add headers
+    options = require('url').parse(url)
+    if data?
+      options.method  = 'POST'
+      options.headers = {
+        'content-length' : Buffer.byteLength(data)
+      }
+    request = if options.protocol is 'https:' then https.request else http.request
+    
+    # Return request promise
     return new Promise((resolve, reject) ->
-      request[method]({
-        url      : url
-        body     : data
-        encoding : null
-      }, (err, res, body) ->
-        if err? then return reject(err)
-        res.body = body
-        resolve(res)
+      req = request(options, (res) ->
+        chunks = []
+        res.setEncoding(null)
+        res.on 'data', (d) -> chunks.push(d)
+        res.on 'end', ->
+          res.body = Buffer.concat(chunks)
+          resolve(res)
       )
+      req.on 'error', (err) -> reject(err)
+      if data? then req.write(data)
+      req.end()
     )
 
   jwsRequest : (path, payload) ->
