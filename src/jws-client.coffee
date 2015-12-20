@@ -1,3 +1,4 @@
+ursa   = require 'ursa'
 logger = require './logger'
 
 class JwsClient
