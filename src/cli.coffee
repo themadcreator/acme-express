@@ -84,6 +84,7 @@ commander
         // copy with the following command:
         //   #{BASENAME} --cross-signed > lets-encrypt-x1-cross-signed.pem
         // Or, you can download it directly from letsencrypt.org at the following URL:
+        //   https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem
         ca   : [fs.readFileSync('lets-encrypt-x1-cross-signed.pem')]
       }
 
