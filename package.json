@@ -1,6 +1,6 @@
 {
   "name": "acme-express",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "ACME protocol client for SSL certificates",
   "bin": {
     "acme-express": "bin/acme-express"
