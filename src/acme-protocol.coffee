@@ -5,7 +5,7 @@ logger      = require './logger'
 {JwsClient} = require './jws-client'
 
 class AcmeProtocol
-  constructor : (@io) ->
+  constructor : (@jws) ->
 
   getCertificate : (domain, certificateDER) ->
     return Promise.resolve()
@@ -16,7 +16,7 @@ class AcmeProtocol
 
   register : =>
     logger.info chalk.blue '\nRegistering account'
-    return @io.jwsRequest('/acme/new-reg', {
+    return @jws.jwsRequest('/acme/new-reg', {
       resource  : 'new-reg'
       agreement : 'https://letsencrypt.org/documents/LE-SA-v1.0.1-July-27-2015.pdf'
     }).then((res) ->
@@ -28,7 +28,7 @@ class AcmeProtocol
 
   authorize : (domain) =>
     logger.info chalk.blue "\nAuthorizing domain '#{domain}'"
-    return @io.jwsRequest('/acme/new-authz', {
+    return @jws.jwsRequest('/acme/new-authz', {
       resource   : 'new-authz'
       identifier :
         type  : 'dns'
@@ -47,25 +47,26 @@ class AcmeProtocol
     challenge = challenges.filter((c) -> c.type is 'http-01')[0]
     if not challenge? then throw new Error('No HTTP challenge available')
     {token} = challenge
-    keyAuthorization = "#{token}.#{@io.thumbprint}"
+    keyAuthorization = "#{token}.#{@jws.thumbprint}"
 
     # Create server to respond to challenge
+    logger.info '  Serving challenge token', chalk.yellow token
     wellknownChallengePath = "/.well-known/acme-challenge/#{token}"
-    logger.info "  Serving challenge token #{chalk.yellow token}"
     server = http.createServer((req, res)->
-      logger.info chalk.yellow '  Got request at token url...'
       if req.url is wellknownChallengePath
+        logger.info chalk.yellow '  Got request at token url...'
         res.statusCode = 200
         res.end(keyAuthorization)
       else
+        logger.info chalk.red '  Got request at unexpected url', req.url
         res.statusCode = 404
         res.end()
     )
 
-    # When server starts, inform CA we are ready for challenge
+    # Start server and inform CA we are ready for challenge
     server.listen(80, =>
       logger.info '  Listening on port 80'
-      @io.jwsRequestUrl(challenge.uri, {
+      @jws.jwsRequestUrl(challenge.uri, {
         resource         : 'challenge'
         keyAuthorization : keyAuthorization
       })
@@ -74,7 +75,7 @@ class AcmeProtocol
     # Poll status every 1 sec until we know if challenge succeeded
     return new Promise((resolve, reject) =>
       pollStatus = =>
-        @io.httpRequest(challenge.uri).then((res) ->
+        @jws.httpRequest(challenge.uri).then((res) ->
           {status} = JSON.parse(res.body.toString('utf8'))
           logger.info "  Challenge status is '#{chalk.yellow status}'..."
           if status isnt 'pending'
@@ -94,7 +95,7 @@ class AcmeProtocol
 
   sign : (certificateDER) ->
     logger.info chalk.blue '\nSigning certificate'
-    return @io.jwsRequest('/acme/new-cert', {
+    return @jws.jwsRequest('/acme/new-cert', {
       resource : 'new-cert'
       csr      : JwsClient.toBase64(certificateDER)
     }).then((res) ->

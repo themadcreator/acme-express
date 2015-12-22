@@ -1,11 +1,12 @@
 fs             = require 'fs'
+path           = require 'path'
 chalk          = require 'chalk'
 commander      = require 'commander'
 logger         = require './logger'
 {JwsClient}    = require './jws-client'
 {AcmeProtocol} = require './acme-protocol'
 
-BASENAME = require('path').basename(process.argv[1])
+BASENAME = path.basename(process.argv[1])
 
 CERTIFICATE_AUTHORITIES = {
   'letsencrypt-staging' : 'https://acme-staging.api.letsencrypt.org'
@@ -23,28 +24,36 @@ lookupOrUrl = (obj) ->
     else throw new Error("Unknown option '#{key}'")
 
 commander
-  .usage("""--account account.pem --csr domain.der --domain ${DOMAIN} --ca letsencrypt-staging
+  .usage("""--account account.pem --csr csr.der --domain ${DOMAIN} --ca letsencrypt-beta
   \n
+    [Automatic Certificate Management Environment](https://github.com/ietf-wg-acme/acme)
+    (ACME) protocol client for acquiring free SSL certificates.
 
-    Automatic Certificate Management Environment (ACME)[1] protocol client for
-    automating SSL certificates.
-
-    Letsencrypt[2] is a gratis, open source community sponsored service that
+    [Letsencrypt.org](https://letsencrypt.org/) is a gratis, open source community sponsored service that
     implements the ACME protocol. This script will allow you to create a
     signed SSL certificate, suitable to secure your server with HTTPS, using
     letsencrypt.org or any other certificate authority that supports the ACME
     protocol.
 
-    [1] https://github.com/ietf-wg-acme/acme/
-    [2] https://letsencrypt.org/
+    REPO    : <https://github.com/themadcreator/acme-express>
+    LICENSE : Apache-2.0
   """)
+  .option('--account <account.pem>', 'Account private key PEM file', fs.readFileSync)
+  .option('--csr <csr.der>', 'Certificate Signing Request file in DER encoding', fs.readFileSync)
+  .option('--dom <domain>', 'The domain for which we are requesting a certificate. e.g. "mydomain.org"')
+  .option('--ca <URL|"letsencrypt-beta"|"letsencrypt-staging">', 'Certificate authority URL running ACME protocol. Default "letsencrypt-staging"', lookupOrUrl(CERTIFICATE_AUTHORITIES), CERTIFICATE_AUTHORITIES['letsencrypt-staging'])
+  .option('--agreement <URL|"letsencrypt-1.0.1">', 'The certificate agreement URL. Default "letsencrypt-1.0.1"', lookupOrUrl(CERTIFICATE_AGREEMENTS), CERTIFICATE_AGREEMENTS['letsencrypt-1.0.1'])
+  .option('--log <debug|info|warn|error>', 'Set the log level (logs always use STDERR). Default "info"', 'info')
+  .option('--cross-signed', 'Print letsencrypt.org\'s cross-signed x1 cert to STDOUT')
   .description("""
   \n  
-    ## Sign a cert
-    
-    Register a domain, point your DNS at your server. From that server, you
-    can use this script to verify that you control the domain and acquire a
-    signed certficate.
+    ## How to Use
+
+    1. Register a domain and point your DNS at your server.
+    2. From that server, use this script to verify that you control the domain
+    and acquire a signed certficate.
+
+    ## Sign a Cert
 
     ```bash
       # Set your domain
@@ -52,11 +61,14 @@ commander
 
       # Create domain key and DER encoded Certificate Signing request
       openssl genrsa 4096 > domain.pem
-      openssl req -new -sha256 -key domain.pem -subj "/CN=${DOMAIN}" -outform DER > domain.der
+      openssl req -new -sha256 -key domain.pem -subj "/CN=${DOMAIN}" -outform DER > csr.der
 
       # Create account key and get letsencrypt.org to sign your cert
       openssl genrsa 4096 > account.pem
-      sudo #{BASENAME} --account account.pem --csr domain.der --dom "${DOMAIN}" --ca letsencrypt-beta > cert.pem
+      sudo #{BASENAME} --account account.pem --csr csr.der --dom "${DOMAIN}" --ca letsencrypt-beta > ${DOMAIN}.pem
+
+      # (Optional) Examine your new certificate
+      openssl x509 -in ${DOMAIN}.pem -text
     ```
 
     #### Why Sudo?
@@ -71,8 +83,8 @@ commander
 
     ## Create an HTTPS Server
 
-    Here is a simple Node.js express server using the certificate produced by
-    this script:
+    Here is an example Node.js express server using a certificate produced
+    by this script:
 
     ```javascript
       let fs      = require('fs');
@@ -85,13 +97,11 @@ commander
       // Load the HTTPS credentials
       let credentials = {
         key  : fs.readFileSync('domain.pem'),
-        cert : fs.readFileSync('cert.pem'),
+        cert : fs.readFileSync(domain + '.pem'),
 
         // If you want to get an 'A' on your ssllabs report card, you need to
-        // include the cross-signed cert from letsencrypt.org. You can get a
-        // copy with the following command:
-        //   #{BASENAME} --cross-signed > lets-encrypt-x1-cross-signed.pem
-        // Or, you can download it directly from letsencrypt.org at the following URL:
+        // include the cross-signed cert from letsencrypt.org. Download it
+        // directly from letsencrypt.org at the following URL:
         //   https://letsencrypt.org/certs/lets-encrypt-x1-cross-signed.pem
         ca   : [fs.readFileSync('lets-encrypt-x1-cross-signed.pem')]
       }
@@ -111,22 +121,14 @@ commander
       });
     ```
   """)
-  .option('--cross-signed', 'Print letsencrypt.org\'s cross-signed x1 cert to STDOUT')
-  .option('--account <account.pem>', 'Account private key PEM file', fs.readFileSync)
-  .option('--csr <domain.der>', 'Certificate Signing Request file in DER encoding', fs.readFileSync)
-  .option('--dom <domain>', 'The domain for which we are requesting a certificate. E.g. "mydomain.org"')
-  .option('--ca <URL|"letsencrypt-beta"|"letsencrypt-staging">', 'Certificate authority URL running ACME protocol. Default "letsencrypt-staging"', lookupOrUrl(CERTIFICATE_AUTHORITIES), CERTIFICATE_AUTHORITIES['letsencrypt-staging'])
-  .option('--agreement <URL|"letsencrypt-1.0.1">', 'The certificate agreement URL. Default "letsencrypt-1.0.1"', lookupOrUrl(CERTIFICATE_AGREEMENTS), CERTIFICATE_AGREEMENTS['letsencrypt-1.0.1'])
-  .option('--log <debug|info|warn|error>', 'Set the log level (logs always use STDERR). Default "info"', 'info')
 
 do ->
   options = commander.parse(process.argv)
 
   # Return X1 cert if requested
   if options.crossSigned
-    console.log fs.readFileSync(__dirname + '/lets-encrypt-x1-cross-signed.pem', 'utf-8')
+    console.log fs.readFileSync(path.join(__dirname, '..', 'certs', 'lets-encrypt-x1-cross-signed.pem'), 'utf-8')
     return
-
 
   # Check args
   if not (options.account? and options.csr? and options.dom?) then return commander.help()
